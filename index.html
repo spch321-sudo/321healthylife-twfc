@@ -1044,9 +1044,78 @@ function _devoDraw(){
     +'</div></div>';
 }
 
+/* ===================== 自訂飲食 / 營養品 / 藥物 清單與提醒 ===================== */
+var INK_TYPES={food:{lbl:'食物',ic:'🍎',c:'#2e7d32'},supp:{lbl:'營養品',ic:'🌿',c:'#00897b'},med:{lbl:'藥物',ic:'💊',c:'#c62828'}};
+function _inkItems(){ if(!S.intakeItems)S.intakeItems=[]; return S.intakeItems; }
+function _inkLog(){ var k=todayKey(); if(!S.intakeLog)S.intakeLog={}; if(!S.intakeLog[k])S.intakeLog[k]={}; return S.intakeLog[k]; }
+function _inkTimingLabel(it){ if(it.timing==='custom')return '⏰ '+(it.time||'--:--'); if(it.timing==='wake')return '🌅 起床後'; if(it.timing==='bed')return '🌙 睡前'; return it.timing==='before'?'🍽️ 飯前':'🍽️ 飯後'; }
+function _inkSortKey(it){ if(it.timing==='wake')return '0_wake'; if(it.timing==='custom')return '1_'+(it.time||'99:99'); if(it.timing==='before')return '2_before'; if(it.timing==='after')return '3_after'; if(it.timing==='bed')return '4_bed'; return '3_after'; }
+function _inkNowHM(){ var d=new Date(); return pad(d.getHours())+':'+pad(d.getMinutes()); }
+function _inkDue(it){ if(it.timing!=='custom'||!it.time)return false; if(_inkLog()[it.id])return false; return _inkNowHM()>=it.time; }
+
+window._inkFormToggle=function(){ var f=document.getElementById('ink-form'); if(!f)return; var show=(f.style.display==='none'||!f.style.display); f.style.display=show?'block':'none'; if(show){var n=document.getElementById('ink-name'); if(n)try{n.focus();}catch(e){}} };
+window._inkTimingChange=function(){ var s=document.getElementById('ink-timing'),t=document.getElementById('ink-time'); if(s&&t)t.style.display=(s.value==='custom')?'inline-block':'none'; };
+window._inkAdd=function(){
+  var n=document.getElementById('ink-name'),ty=document.getElementById('ink-type'),tm=document.getElementById('ink-timing'),ti=document.getElementById('ink-time'),no=document.getElementById('ink-note');
+  var name=n?(n.value||'').trim():''; if(!name){ if(n)try{n.focus();}catch(e){} toast('請先輸入名稱'); return; }
+  var timing=tm?tm.value:'before';
+  _inkItems().push({id:'ink'+Date.now().toString(36)+Math.floor(Math.random()*1e4),name:name,type:ty?ty.value:'food',timing:timing,time:(timing==='custom'&&ti)?ti.value:'',note:no?(no.value||'').trim():'',created:Date.now()});
+  save(); toast('✓ 已加入「'+name+'」'); renderFood();
+};
+window._inkToggle=function(id){ var log=_inkLog(); if(log[id])delete log[id]; else log[id]=Date.now(); save(); renderFood(); };
+window._inkDelete=function(id){ var arr=_inkItems(),it=null,i; for(i=0;i<arr.length;i++){if(arr[i].id===id){it=arr[i];break;}} if(!it)return; _confirmDialog('🗑️ 刪除項目','確定刪除「'+it.name+'」？此項目將被移除。',function(){ S.intakeItems=_inkItems().filter(function(x){return x.id!==id;}); save(); renderFood(); }); };
+
+function renderIntakeSection(view){
+  var dk=window.__isDark();
+  var items=_inkItems().slice().sort(function(a,b){var ka=_inkSortKey(a),kb=_inkSortKey(b);return ka<kb?-1:(ka>kb?1:a.created-b.created);});
+  var log=_inkLog(); var done=0; items.forEach(function(it){if(log[it.id])done++;});
+  view.appendChild(el('h2','title','🔔 我的自訂清單（食物・營養品・藥物）'));
+  view.appendChild(el('div','lead','自訂每天要吃的食物、營養品與藥物，設定飯前／飯後／時間，每天打勾記錄。'+(items.length?'　今日已完成 '+done+' / '+items.length:'')));
+
+  var ctrl=el('div'); ctrl.style.cssText='margin:.2rem 2px .4rem';
+  ctrl.innerHTML='<button onclick="window._inkFormToggle()" style="width:100%;padding:12px;border-radius:12px;border:1.5px dashed var(--brand);background:transparent;color:var(--brand-d);font-weight:800;font-size:1rem;cursor:pointer">＋ 新增項目</button>';
+  view.appendChild(ctrl);
+
+  var inpBg=dk?'rgba(255,255,255,0.06)':'#f8fdf8',inpCol=dk?'#e8f5e9':'#1b1b1b',bd=dk?'rgba(255,255,255,0.16)':'rgba(0,0,0,0.12)';
+  var ist='padding:10px;border-radius:10px;border:1px solid '+bd+';font-size:1rem;background:'+inpBg+';color:'+inpCol+';font-family:inherit';
+  var form=el('div','card'); form.id='ink-form'; form.style.display='none';
+  form.innerHTML=
+    '<input id="ink-name" placeholder="名稱（例：維生素C、降血壓藥、紅蘿蔔）" style="width:100%;box-sizing:border-box;'+ist+';margin-bottom:10px">'
+    +'<div style="display:flex;gap:10px;align-items:center;margin-bottom:10px"><label style="font-size:.92rem;color:var(--muted);min-width:38px">類型</label>'
+      +'<select id="ink-type" style="flex:1;'+ist+'"><option value="food">🍎 食物</option><option value="supp">🌿 營養品</option><option value="med">💊 藥物</option></select></div>'
+    +'<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px"><label style="font-size:.92rem;color:var(--muted);min-width:38px">時機</label>'
+      +'<select id="ink-timing" onchange="window._inkTimingChange()" style="flex:1;min-width:130px;'+ist+'"><option value="wake">🌅 起床後</option><option value="before">🍽️ 飯前</option><option value="after">🍽️ 飯後</option><option value="bed">🌙 睡前</option><option value="custom">⏰ 自訂時間</option></select>'
+      +'<input type="time" id="ink-time" value="08:00" style="display:none;'+ist+'"></div>'
+    +'<input id="ink-note" placeholder="劑量／備註（選填，例：1顆、飯後30分）" style="width:100%;box-sizing:border-box;'+ist+';margin-bottom:12px">'
+    +'<div style="display:flex;gap:10px"><button onclick="window._inkAdd()" style="flex:1;padding:12px;border-radius:12px;border:none;background:var(--brand);color:#fff;font-weight:800;font-size:1rem;cursor:pointer">新增</button>'
+      +'<button onclick="window._inkFormToggle()" style="padding:12px 18px;border-radius:12px;border:1px solid '+bd+';background:transparent;color:var(--muted);font-size:1rem;cursor:pointer">取消</button></div>';
+  view.appendChild(form);
+
+  if(!items.length){
+    var empty=el('div','card'); empty.style.cssText='text-align:center;color:var(--muted);font-size:.9rem';
+    empty.innerHTML='還沒有自訂項目。點上方「＋ 新增項目」，把每天要吃的食物、營養品或藥物加進來吧 🌱';
+    view.appendChild(empty);
+  } else {
+    items.forEach(function(it){
+      var tm=INK_TYPES[it.type]||INK_TYPES.food, on=!!log[it.id], due=_inkDue(it);
+      var row=el('div','card');
+      row.style.cssText='display:flex;align-items:center;gap:.7rem;padding:.8rem .9rem;margin:.5rem 0;border:2px solid '+(on?'var(--brand)':(due?'#c62828':'var(--border)'))+';'+(on?('background:'+(dk?'rgba(76,175,80,0.12)':'#f1f8f2')):'');
+      var dueBadge=due?'<span style="margin-left:6px;font-size:.72rem;font-weight:800;color:#fff;background:#c62828;border-radius:8px;padding:1px 7px">該服用了</span>':'';
+      var note=it.note?'<div style="font-size:.8rem;color:var(--muted);margin-top:2px">'+esc(it.note)+'</div>':'';
+      row.innerHTML='<div style="font-size:26px;line-height:1;flex:0 0 auto">'+tm.ic+'</div>'
+        +'<div style="flex:1;min-width:0"><div style="font-size:1.05rem;font-weight:800;color:'+(dk?'#e8f5e9':'#1b1b1b')+'">'+esc(it.name)+dueBadge+'</div>'
+        +'<div style="font-size:.82rem;color:'+tm.c+';font-weight:700;margin-top:1px">'+tm.lbl+'　'+_inkTimingLabel(it)+'</div>'+note+'</div>'
+        +'<button onclick="window._inkDelete(\''+it.id+'\')" aria-label="刪除" style="flex:0 0 auto;background:transparent;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer;padding:4px 6px">🗑</button>'
+        +'<div onclick="window._inkToggle(\''+it.id+'\')" role="button" aria-label="打卡" style="flex:0 0 auto;width:38px;height:38px;border-radius:50%;border:2px solid '+(on?'var(--brand)':'var(--track)')+';background:'+(on?'var(--brand)':'transparent')+';display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.2rem;font-weight:800;cursor:pointer">'+(on?'✓':'')+'</div>';
+      view.appendChild(row);
+    });
+  }
+}
+
 function renderFood(){
   var view=document.getElementById('view'); view.innerHTML='';
   document.getElementById('secLabel').textContent='\ud83c\udf08 \u5f69\u8679\u98f2\u98df';
+  renderIntakeSection(view);
   var rk=todayKey(); var eaten=S.rainbow[rk]||[];
   var sk=weekKey(); var sw=S.superWeek[sk];
   if(!sw||Array.isArray(sw)){sw={c:{},f:{}};}
@@ -1592,7 +1661,7 @@ function _clearToday(){ var k=todayKey();
 }
 function _clearAll(){
   S.days={};S.rainbow={};S.rainbowFoods={};S.superWeek={};S.mood={};S.measure={w:[],bp:[]};S.fast={cur:null,log:[],goal:16};
-  S.bedThanks={};S.bedMood={};S.bedPray={};S.temp={log:{}};S.devo={done:{},notes:{},view:1};
+  S.bedThanks={};S.bedMood={};S.bedPray={};S.temp={log:{}};S.devo={done:{},notes:{},view:1};S.intakeLog={};
   save(); toast('已清除全部記錄'); renderSet();
 }
 function _showShareText(title,text){
