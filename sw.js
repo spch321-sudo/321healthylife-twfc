@@ -2,9 +2,10 @@
    台灣貴格會聯會
    策略：stale-while-revalidate（先回快取、背景更新）
    改版時把下面的版本號 +1，使用者重開即會更新 */
-var CACHE = 'newstart321-v2';
+var CACHE = 'newstart321-v3-gx1103';
 var ASSETS = ['./', './index.html', './favicon-32.png', './favicon-16.png',
-              './apple-touch-icon.png', './icon-192.png', './icon-512.png'];
+              './apple-touch-icon.png', './icon-192.png', './icon-512.png',
+              './gxr.js?v=gx1103', './gxa.js?v=gx1103'];
 
 self.addEventListener('install', function (e) {
   self.skipWaiting();
@@ -16,7 +17,7 @@ self.addEventListener('install', function (e) {
 self.addEventListener('activate', function (e) {
   e.waitUntil(
     caches.keys().then(function (keys) {
-      return Promise.all(keys.map(function (k) { if (k !== CACHE) return caches.delete(k); }));
+      return Promise.all(keys.map(function (k) { if (k !== CACHE && k.indexOf('newstart321') === 0) return caches.delete(k); }));
     }).then(function () { return self.clients.claim(); })
   );
 });
