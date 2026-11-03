@@ -2,7 +2,7 @@
    台灣貴格會聯會
    策略：stale-while-revalidate（先回快取、背景更新）
    改版時把下面的版本號 +1，使用者重開即會更新 */
-var CACHE = 'newstart321-v3-gx1103';
+var CACHE = 'newstart321-v4-gx1103b';
 var ASSETS = ['./', './index.html', './favicon-32.png', './favicon-16.png',
               './apple-touch-icon.png', './icon-192.png', './icon-512.png',
               './gxr.js?v=gx1103', './gxa.js?v=gx1103'];
