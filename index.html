@@ -1886,7 +1886,7 @@ try{ fastWatch(); setInterval(fastWatch,1000); document.addEventListener('visibi
 /* 離線快取 */
 if('serviceWorker' in navigator){
   window.addEventListener('load',function(){
-    navigator.serviceWorker.register('sw.js')
+    navigator.serviceWorker.register('sw.js',{updateViaCache:'none'})
       .then(function(){console.log('離線快取已啟用 ✅');})
       .catch(function(){console.log('離線快取未啟用（可能尚未上傳 sw.js）');});
   });
@@ -2738,5 +2738,8 @@ window.GXA_CFG = {
 </script>
 <script src="gxr.js?v=gx1103"></script>
 <script src="gxa.js?v=gx1103"></script>
+<script>var APPVER="v6-up1103";window.UPD321_VER=APPVER;window.UPD321_PFX=["nstw321-", "newstart321-v5-gx1103c"];</script>
+<script src="upd321.js?v=v6-up1103"></script>
+<script>UPD321.mountWhen("#view","end",null,".set-row");</script>
 </body>
 </html>

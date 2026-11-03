@@ -1,6 +1,11 @@
 # 321healthylife-twfc
 
 
+## 2026-11-03 v6-up1103（自動更新確認版）
+- 加入通用自動更新掛件 `upd321.js`（version.json 輪詢＋reg.update、空閒自動套用，朗讀／輸入／共讀／美圖工作室中只顯示頂端更新條、防無限重整），設定頁新增「版本與更新」（檢查更新／強制更新）。
+- `sw.js` 改為網路優先（HTML／JS／JSON），並只清自己前綴（`nstw321-`）的快取；舊快取 `newstart321-v5-gx1103c` 一併清理。原本各 repo 共用 `newstart321`/`321health` 前綴會互刪快取，已分開。
+- 版本 `v6-up1103` 四處一致：`version.json`、`sw.js`、index.html（APPVER）、本 README。
+
 ## 2026-11-03 gx1103c
 - 美圖預設團名、小智自我介紹、鎖屏顯示更正為「台灣貴格會聯會」（Taiwan Friends Church）。
 
